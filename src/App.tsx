@@ -128,8 +128,12 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>(() => {
     return localStorage.getItem("arcadia_active_tab") || "";
   });
+  const [kidFullScreen, setKidFullScreen] = useState<boolean>(() => {
+    return localStorage.getItem("arcadia_kid_fs") === "true";
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const initialLoadDone = React.useRef(false);
 
   // ─── Offline-First Sync Engine ──────────────────────────────────
   const {
@@ -350,6 +354,7 @@ export default function App() {
   useEffect(() => {
     if (loggedUser) {
       fetchState();
+      initialLoadDone.current = true;
     }
   }, [loggedUser]);
 
@@ -363,11 +368,17 @@ export default function App() {
     localStorage.setItem("arcadia_active_tab", tab);
     setParentPinInput("");
     setPinError("");
-    
-    // Fetch fresh state on user action (profile/dashboard tab switch)
-    if (loggedUser) {
+
+    // Fetch fresh state only AFTER initial load (prevents duplicate API call on mount)
+    if (loggedUser && initialLoadDone.current) {
       fetchState(true);
     }
+  };
+
+  const handleToggleKidFullScreen = () => {
+    const newVal = !kidFullScreen;
+    setKidFullScreen(newVal);
+    localStorage.setItem("arcadia_kid_fs", newVal ? "true" : "false");
   };
 
   const handleVerifyPin = (pin: string) => {
@@ -434,12 +445,26 @@ export default function App() {
   };
 
   const selectedTheme = themeStyles[theme] || themeStyles.nintendo;
+  
+  // ─── Full-Screen Kid Mode: hide sidebar, full-width content ───
+  const isKidFullScreenMode = kidFullScreen && activeTab !== "parent" && currentKid != null;
+
+  const handleQuickAdminAccess = () => {
+    // Always force PIN challenge when coming from kid full-screen mode
+    setIsParentAuthorized(false);
+    localStorage.setItem("arcadia_parent_authorized", "false");
+    setParentPinInput("");
+    setPinError("");
+    handleTabChange("parent");
+  };
 
   return (
     <div className={`flex flex-col lg:flex-row min-h-screen antialiased transition-all duration-300 ${selectedTheme.root}`} id="app-root-container">
       
-      {/* SIDEBAR STYLING - VIBRANT PALETTE QUEST BOARD */}
-      <aside className={`w-full lg:w-72 flex flex-col p-6 shrink-0 transition-all duration-300 ${selectedTheme.aside}`} id="aside-navbar">
+      {/* SIDEBAR — ascuns în full-screen kid mode */}
+      <aside className={`${
+        isKidFullScreenMode ? 'hidden' : 'flex'
+      } w-full lg:w-72 flex-col p-6 shrink-0 transition-all duration-300 ${selectedTheme.aside}`} id="aside-navbar">
         {/* Brand Logo */}
         <div className="flex items-center gap-3 mb-8" id="brand-logo-container">
           <div className="w-12 h-12 bg-[#ff4b4b] border-2 border-slate-900 rounded-2xl flex items-center justify-center text-white font-display font-black text-xl rotate-[-4deg] shadow-[3px_3px_0_0_#1e293b]">
@@ -587,7 +612,9 @@ export default function App() {
       </aside>
 
       {/* MAIN VIEW AREA - VIBRANT PALETTE DASHBOARD */}
-      <main className={`flex-1 flex flex-col p-4 lg:p-8 overflow-y-auto transition-all duration-300 ${selectedTheme.main}`} id="main-content-layout">
+      <main className={`${
+        isKidFullScreenMode ? 'w-full max-w-full p-4 lg:p-6' : 'flex-1 p-4 lg:p-8'
+      } flex flex-col overflow-y-auto transition-all duration-300 ${selectedTheme.main}`} id="main-content-layout">
         
         {/* Header containing name query, and point containers */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8" id="main-header">
@@ -685,16 +712,6 @@ export default function App() {
           )}
         </header>
 
-        {/* Notification warnings */}
-        {process.env.GEMINI_API_KEY === "MY_GEMINI_API_KEY" && (
-          <div className="mb-6 p-4 bg-indigo-50 border-l-4 border-indigo-500 rounded-r-2xl text-indigo-950 text-xs flex items-center gap-2 shadow-xs" id="api-key-notice">
-            <AlertTriangle className="w-5 h-5 text-indigo-600 shrink-0" />
-            <div>
-              <span className="font-extrabold">Notă Emulator:</span> Generatorul de lectură de siguranță (Local Mode) este complet securizat și operațional pentru simularea cu succes a tuturor textelor de vacanță, evaluărilor de sarcini vizuale cu feedback inteligent și cumpărăturilor din catalog.
-            </div>
-          </div>
-        )}
-
         {/* Dashboard Pages loaded dynamically with fade transitions */}
         <div className="flex-1" id="active-dashboard-container">
           <AnimatePresence mode="wait">
@@ -730,6 +747,8 @@ export default function App() {
                     }}
                     theme={theme}
                     onChangeTheme={setTheme}
+                    kidFullScreen={kidFullScreen}
+                    onToggleKidFullScreen={handleToggleKidFullScreen}
                   />
                 ) : (
                   <div className="max-w-md mx-auto bg-white rounded-3xl p-8 border-3 border-slate-900 shadow-[6px_6px_0_0_#1e293b] space-y-6 text-center mt-12" id="parent-pin-challenge">
@@ -772,6 +791,21 @@ export default function App() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* ─── Floating Admin Access Button (doar în full-screen kid mode) ─── */}
+        {isKidFullScreenMode && (
+          <div className="fixed bottom-6 left-6 z-40">
+            <button
+              onClick={handleQuickAdminAccess}
+              className="w-12 h-12 bg-white/80 backdrop-blur-sm border-2 border-slate-300 hover:border-amber-400 hover:bg-amber-50 rounded-full flex items-center justify-center text-lg shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer group"
+              title="Acces părinți (administrare)"
+              id="btn-quick-admin"
+            >
+              <span className="group-hover:scale-110 transition-transform">🔐</span>
+            </button>
+            <p className="text-[8px] text-slate-400 text-center mt-1 font-semibold">Admin</p>
+          </div>
+        )}
       </main>
 
       {/* Floating In-App Toast Indicators */}

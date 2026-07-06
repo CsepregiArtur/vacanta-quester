@@ -7,7 +7,7 @@
       "points": 130,
       "avatar": "🐶",
       "readingStreak": 0,
-      "daysSinceLastReading": 1,
+      "daysSinceLastReading": 3,
       "activeTimer": null
     },
     {
@@ -17,13 +17,13 @@
       "points": 180,
       "avatar": "🐶",
       "readingStreak": 0,
-      "daysSinceLastReading": 1,
+      "daysSinceLastReading": 3,
       "activeTimer": null
     }
   ],
   "activeTasks": [
     {
-      "id": "adrian-chore-vacuum-1782368574714",
+      "id": "adrian-chore-vacuum-1783366695811",
       "childId": "adrian",
       "name": "Aspirat în Cameră & Hol",
       "type": "chore",
@@ -34,7 +34,7 @@
       "streak": 3
     },
     {
-      "id": "adrian-chore-room-1782368574714",
+      "id": "adrian-chore-room-1783366695812",
       "childId": "adrian",
       "name": "Curățenie în Cameră",
       "type": "chore",
@@ -45,7 +45,7 @@
       "streak": 2
     },
     {
-      "id": "adrian-chore-dishes-1782368574714",
+      "id": "adrian-chore-dishes-1783366695812",
       "childId": "adrian",
       "name": "Aranjat și Clătit Vase",
       "type": "chore",
@@ -56,7 +56,7 @@
       "streak": 1
     },
     {
-      "id": "adrian-hygiene-morning-1782368574714",
+      "id": "adrian-hygiene-morning-1783366695812",
       "childId": "adrian",
       "name": "🧼 Igienă de Dimineață",
       "type": "chore",
@@ -67,7 +67,7 @@
       "streak": 5
     },
     {
-      "id": "adrian-hygiene-evening-1782368574714",
+      "id": "adrian-hygiene-evening-1783366695812",
       "childId": "adrian",
       "name": "🚿 Igienă de Seară",
       "type": "chore",
@@ -78,7 +78,7 @@
       "streak": 4
     },
     {
-      "id": "jonel-chore-vacuum-1782368574714",
+      "id": "jonel-chore-vacuum-1783366695812",
       "childId": "jonel",
       "name": "Aspirat în Cameră & Hol",
       "type": "chore",
@@ -89,7 +89,7 @@
       "streak": 3
     },
     {
-      "id": "jonel-chore-room-1782368574714",
+      "id": "jonel-chore-room-1783366695812",
       "childId": "jonel",
       "name": "Curățenie în Cameră",
       "type": "chore",
@@ -100,7 +100,7 @@
       "streak": 2
     },
     {
-      "id": "jonel-chore-dishes-1782368574714",
+      "id": "jonel-chore-dishes-1783366695812",
       "childId": "jonel",
       "name": "Aranjat și Clătit Vase",
       "type": "chore",
@@ -111,7 +111,7 @@
       "streak": 1
     },
     {
-      "id": "jonel-hygiene-morning-1782368574714",
+      "id": "jonel-hygiene-morning-1783366695812",
       "childId": "jonel",
       "name": "🧼 Igienă de Dimineață",
       "type": "chore",
@@ -122,7 +122,7 @@
       "streak": 5
     },
     {
-      "id": "jonel-hygiene-evening-1782368574714",
+      "id": "jonel-hygiene-evening-1783366695812",
       "childId": "jonel",
       "name": "🚿 Igienă de Seară",
       "type": "chore",
@@ -131,62 +131,23 @@
       "status": "pending",
       "category": "Household",
       "streak": 4
-    },
-    {
-      "id": "reading-jonel-1782404770785",
-      "childId": "jonel",
-      "name": "Lectură: 🦁 Animale din Junglă (Failsafe)",
-      "type": "reading",
-      "description": "Citește textul de vacanță adaptat și răspunde corect la cele 3 întrebări.",
-      "points": 75,
-      "status": "rejected",
-      "readingTopic": "🦁 Animale din Junglă",
-      "readingPassage": "Subiect: Secretele și Supraviețuirea în Junglă 🦁\n\nJunglele sau pădurile tropicale sunt adevărate paradisuri ale biodiversității! Deși acoperă doar 6% din suprafața Pământului, ele găzduiesc mai mult de jumătate din toate speciile de plante și animale ale lumii. Aici, fiecare animal are o tactică specială de supraviețuire.\n\nDe exemplu, tigrii folosesc dungile lor unice pentru a se camufla în vegetația înaltă, permițându-le să se apropie de pradă nevăzuți. Ghepardul folosește viteza sa incredibilă de peste 100 km/h, în timp ce elefanții din jungle folosesc sunete de joasă frecvență, numite infrasunete, pentru a comunica între ei la distanțe de câțiva kilometri, sunete pe care urechea umană nici nu le poate auzi. Protejarea junglei este vitală pentru aerul pe care îl respirăm și pentru viitorul acestor specii spectaculoase!",
-      "readingQuestions": [
-        {
-          "id": 1,
-          "question": "Ce procent din suprafața Pământului este acoperit în prezent de jungle?",
-          "options": [
-            "Aproximativ 50%",
-            "Aproximativ 6%",
-            "Mai puțin de 1%"
-          ],
-          "correctAnswerIndex": 1,
-          "selectedAnswerIndex": 1,
-          "feedback": "Răspuns corect! Excelent."
-        },
-        {
-          "id": 2,
-          "question": "Cum comunică elefanții la distanțe uimitoare de mii de metri?",
-          "options": [
-            "Folosind infrasunete de joasă frecvență",
-            "Prin semnale cu lanterne",
-            "Prin gesturi ciudate cu coada"
-          ],
-          "correctAnswerIndex": 0,
-          "selectedAnswerIndex": 1,
-          "feedback": "Răspuns greșit! Varianta corectă era \"Folosind infrasunete de joasă frecvență\"."
-        },
-        {
-          "id": 3,
-          "question": "La ce le folosesc cu precădere tigrilor dungile lor faimoase?",
-          "options": [
-            "Să îi sperie pe elefanți",
-            "Pentru camuflaj natural în ierburi",
-            "Să atragă privirile pasagerilor din jeep"
-          ],
-          "correctAnswerIndex": 1,
-          "selectedAnswerIndex": 1,
-          "feedback": "Răspuns corect! Excelent."
-        }
-      ],
-      "difficultyClass": "Standard",
-      "attemptsCount": 3,
-      "firstAttemptScore": 2,
-      "readingScore": 2
     }
   ],
   "notifications": [
+    {
+      "id": "next-day-auto-1783366695812",
+      "childName": "Sistem",
+      "message": "S-a activat automat trecerea la următoarea zi calendaristică de vacanță (2026-07-06)! Sarcinile, igiena și turele de plimbat câinele au fost resetate cu succes.",
+      "timestamp": "2026-07-06T19:38:15.812Z",
+      "type": "success"
+    },
+    {
+      "id": "next-day-auto-1783110942367",
+      "childName": "Sistem",
+      "message": "S-a activat automat trecerea la următoarea zi calendaristică de vacanță (2026-07-03)! Sarcinile, igiena și turele de plimbat câinele au fost resetate cu succes.",
+      "timestamp": "2026-07-03T20:35:42.367Z",
+      "type": "success"
+    },
     {
       "id": "notif-read-fail-1782404796686",
       "childName": "jonel",
@@ -426,6 +387,18 @@
       "dateKey": "2026-06-25",
       "adrian": 130,
       "jonel": 180
+    },
+    {
+      "date": "3 iul.",
+      "dateKey": "2026-07-03",
+      "adrian": 130,
+      "jonel": 180
+    },
+    {
+      "date": "6 iul.",
+      "dateKey": "2026-07-06",
+      "adrian": 130,
+      "jonel": 180
     }
   ],
   "activityTimeLogs": [
@@ -510,7 +483,7 @@
     "pass": "",
     "secure": false
   },
-  "lastUpdated": "2026-06-25T16:26:36.687Z",
+  "lastUpdated": "2026-07-06T19:38:15.812Z",
   "tomorrowSchedule": {},
-  "currentDateKey": "2026-06-25"
+  "currentDateKey": "2026-07-06"
 }

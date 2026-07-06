@@ -187,4 +187,99 @@ export interface AppState {
     secure: boolean;
   };
   lastUpdated?: string;
+  pets?: PetCompanion[];
 }
+
+/**
+ * Pet / Animal Companion Types
+ */
+
+export type PetType = "dog" | "cat" | "hamster" | "rabbit" | "fish" | "bird" | "turtle" | "other";
+
+export interface PetActivity {
+  id: string;
+  name: string;
+  description: string;
+  points: number;
+  icon: string;
+  slot?: "morning" | "midday" | "evening";
+}
+
+export interface PetCompanion {
+  id: string;
+  familyId: string;
+  type: PetType;
+  name: string;
+  icon: string;
+  enabled: boolean;
+  activities: PetActivity[];
+  createdAt: string;
+}
+
+export const PET_ACTIVITIES_BY_TYPE: Record<string, { label: string; icon: string; activities: PetActivity[] }> = {
+  dog: {
+    label: "Câine", icon: "🐕",
+    activities: [
+      { id: "dog_feed", name: "Hrănire câine", description: "Hrănește câinele", points: 20, icon: "🍗" },
+      { id: "dog_walk_morning", name: "Plimbare dimineața", description: "Plimbă câinele dimineața", points: 40, icon: "🌅", slot: "morning" },
+      { id: "dog_walk_midday", name: "Plimbare la prânz", description: "Plimbă câinele la prânz", points: 40, icon: "☀️", slot: "midday" },
+      { id: "dog_walk_evening", name: "Plimbare seara", description: "Plimbă câinele seara", points: 40, icon: "🌆", slot: "evening" },
+      { id: "dog_brush", name: "Periere câine", description: "Perie câinele", points: 25, icon: "🪮" },
+    ],
+  },
+  cat: {
+    label: "Pisică", icon: "🐈",
+    activities: [
+      { id: "cat_feed", name: "Hrănire pisică", description: "Hrănește pisica", points: 20, icon: "🥫" },
+      { id: "cat_play", name: "Joacă cu pisica", description: "Joacă-te cu pisica 15 minute", points: 30, icon: "🧶" },
+      { id: "cat_litter", name: "Curățare litieră", description: "Curăță litiera pisicii", points: 35, icon: "🧹" },
+      { id: "cat_brush", name: "Periere pisică", description: "Perie pisica", points: 25, icon: "🪮" },
+    ],
+  },
+  hamster: {
+    label: "Hamster", icon: "🐹",
+    activities: [
+      { id: "hamster_feed", name: "Hrănire hamster", description: "Hrănește hamsterul", points: 15, icon: "🥜" },
+      { id: "hamster_clean", name: "Curățare cușcă", description: "Curăță cușca", points: 30, icon: "🧹" },
+      { id: "hamster_play", name: "Joacă cu hamsterul", description: "Joacă-te cu hamsterul", points: 20, icon: "⚪" },
+    ],
+  },
+  rabbit: {
+    label: "Iepure", icon: "🐰",
+    activities: [
+      { id: "rabbit_feed", name: "Hrănire iepure", description: "Hrănește iepurele", points: 15, icon: "🥕" },
+      { id: "rabbit_clean", name: "Curățare cușcă", description: "Curăță cușca iepurelui", points: 30, icon: "🧹" },
+      { id: "rabbit_play", name: "Joacă cu iepurele", description: "Joacă-te cu iepurele", points: 20, icon: "🐇" },
+    ],
+  },
+  fish: {
+    label: "Peștișor", icon: "🐟",
+    activities: [
+      { id: "fish_feed", name: "Hrănire pești", description: "Hrănește peștii", points: 10, icon: "🪱" },
+      { id: "fish_clean", name: "Curățare acvariu", description: "Curăță acvariul", points: 35, icon: "🧽" },
+    ],
+  },
+  bird: {
+    label: "Pasăre", icon: "🐦",
+    activities: [
+      { id: "bird_feed", name: "Hrănire pasăre", description: "Hrănește pasărea", points: 15, icon: "🌾" },
+      { id: "bird_clean", name: "Curățare colivie", description: "Curăță colivia", points: 25, icon: "🧹" },
+      { id: "bird_play", name: "Joacă cu pasărea", description: "Joacă-te cu pasărea", points: 20, icon: "🪶" },
+    ],
+  },
+  turtle: {
+    label: "Broască țestoasă", icon: "🐢",
+    activities: [
+      { id: "turtle_feed", name: "Hrănire țestoasă", description: "Hrănește țestoasa", points: 15, icon: "🥬" },
+      { id: "turtle_clean", name: "Curățare terariu", description: "Curăță terariul", points: 30, icon: "🧹" },
+    ],
+  },
+  other: {
+    label: "Alt animal", icon: "🐾",
+    activities: [
+      { id: "other_feed", name: "Hrănire animal", description: "Hrănește animalul", points: 15, icon: "🍽️" },
+      { id: "other_clean", name: "Curățare spațiu", description: "Curăță spațiul animalului", points: 25, icon: "🧹" },
+      { id: "other_play", name: "Joacă cu animalul", description: "Joacă-te cu animalul", points: 20, icon: "🎾" },
+    ],
+  },
+};

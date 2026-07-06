@@ -151,6 +151,14 @@ export async function authFetch(
   if (loggedEmail) {
     headers.set("x-parent-email", loggedEmail);
   }
+  // Correlation ID — urmărire end-to-end (dacă nu e deja setat de apelant)
+  if (!headers.has("X-Correlation-ID")) {
+    try {
+      headers.set("X-Correlation-ID", crypto.randomUUID());
+    } catch {
+      headers.set("X-Correlation-ID", `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`);
+    }
+  }
 
   const response = await doFetch(input, {
     ...init,

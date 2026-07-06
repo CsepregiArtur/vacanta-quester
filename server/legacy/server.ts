@@ -36,6 +36,23 @@ app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ limit: "20mb", extended: true }));
 
 // ═════════════════════════════════════════════════════════════════════
+// CORRELATION ID — urmărire end-to-end pentru debugging
+// ═════════════════════════════════════════════════════════════════════
+import { correlationIdMiddleware, logEvent } from "../middleware/correlation-id.middleware";
+import { trackSystemEvent, initSystemEvents } from "../services/system-events.service";
+app.use(correlationIdMiddleware);
+initSystemEvents();
+
+// Logare automată a fiecărui request
+app.use((req, res, next) => {
+  trackSystemEvent(req.correlationId, "request_received", {
+    method: req.method,
+    path: req.path,
+  });
+  next();
+});
+
+// ═════════════════════════════════════════════════════════════════════
 // RATE LIMITING — protecție împotriva atacurilor
 // ═════════════════════════════════════════════════════════════════════
 const apiLimiter = rateLimit({
@@ -702,6 +719,7 @@ const createDefaultState = (parentEmail?: string): any => {
     parentEmail: parentEmail || "",
     emailsSent: [],
     readingHistory: [],
+    pets: [],
     suggestions: [],
     pointsHistory: [],
     activityTimeLogs: [],
@@ -3585,6 +3603,238 @@ app.post("/api/sync/batch", authMiddleware, (req, res) => {
   res.json({ success: true, results, db });
 });
 
+// ═══════════════════════════════════════════════════════════════════
+// NEW: PARENT — ADĂUGARE COPIL, ANIMALE, CONFIG ACTIVITĂȚI/RECOMPENSE
+// ═══════════════════════════════════════════════════════════════════
+
+// POST /api/parent/add-child — Adaugă un copil nou în familie
+app.post("/api/parent/add-child", authMiddleware, (req, res) => {
+  const { name, age, avatar } = req.body;
+  if (!name) return res.status(400).json({ error: "Numele este obligatoriu!" });
+
+  const db = loadDB();
+  const childId = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  
+  // Check if child ID already exists
+  if (db.children.find((c: any) => c.id === childId)) {
+    return res.status(400).json({ error: "Există deja un copil cu acest nume!" });
+  }
+
+  const newChild = {
+    id: childId,
+    name,
+    age: Number(age) || 8,
+    points: 0,
+    avatar: avatar || "🐶",
+    readingStreak: 0,
+    daysSinceLastReading: 0,
+    activeTimer: null,
+  };
+  db.children.push(newChild);
+
+  db.notifications.unshift({
+    id: `notif-child-${Date.now()}`,
+    childName: "Părinte",
+    message: `A adăugat un copil nou: ${name} 🎉`,
+    timestamp: new Date().toISOString(),
+    type: "success",
+  });
+
+  saveDB(db);
+  res.json({ success: true, db, child: newChild });
+});
+
+// POST /api/parent/add-pet — Adaugă un animal de companie
+app.post("/api/parent/add-pet", authMiddleware, (req, res) => {
+  const { type, name } = req.body;
+  if (!type || !name) return res.status(400).json({ error: "Tipul și numele sunt obligatorii!" });
+
+  const db = loadDB();
+  if (!db.pets) db.pets = [];
+
+  const PET_CONFIGS: Record<string, { icon: string; label: string; activities: any[] }> = {
+    dog: { icon: "🐕", label: "Câine", activities: [
+      { id: `dog_feed_${Date.now()}`, name: "Hrănire câine", description: "Hrănește câinele", points: 20, icon: "🍗" },
+      { id: `dog_walk_morning_${Date.now()}`, name: "Plimbare dimineața", description: "Plimbă câinele dimineața", points: 40, icon: "🌅", slot: "morning" },
+      { id: `dog_walk_midday_${Date.now()}`, name: "Plimbare la prânz", description: "Plimbă câinele la prânz", points: 40, icon: "☀️", slot: "midday" },
+      { id: `dog_walk_evening_${Date.now()}`, name: "Plimbare seara", description: "Plimbă câinele seara", points: 40, icon: "🌆", slot: "evening" },
+      { id: `dog_brush_${Date.now()}`, name: "Periere câine", description: "Perie câinele", points: 25, icon: "🪮" },
+    ]},
+    cat: { icon: "🐈", label: "Pisică", activities: [
+      { id: `cat_feed_${Date.now()}`, name: "Hrănire pisică", description: "Hrănește pisica", points: 20, icon: "🥫" },
+      { id: `cat_play_${Date.now()}`, name: "Joacă cu pisica", description: "Joacă-te 15 minute", points: 30, icon: "🧶" },
+      { id: `cat_litter_${Date.now()}`, name: "Curățare litieră", description: "Curăță litiera", points: 35, icon: "🧹" },
+      { id: `cat_brush_${Date.now()}`, name: "Periere pisică", description: "Perie pisica", points: 25, icon: "🪮" },
+    ]},
+    hamster: { icon: "🐹", label: "Hamster", activities: [
+      { id: `hamster_feed_${Date.now()}`, name: "Hrănire hamster", description: "Hrănește hamsterul", points: 15, icon: "🥜" },
+      { id: `hamster_clean_${Date.now()}`, name: "Curățare cușcă", description: "Curăță cușca", points: 30, icon: "🧹" },
+      { id: `hamster_play_${Date.now()}`, name: "Joacă cu hamsterul", description: "Joacă-te", points: 20, icon: "⚪" },
+    ]},
+    rabbit: { icon: "🐰", label: "Iepure", activities: [
+      { id: `rabbit_feed_${Date.now()}`, name: "Hrănire iepure", description: "Hrănește iepurele", points: 15, icon: "🥕" },
+      { id: `rabbit_clean_${Date.now()}`, name: "Curățare cușcă", description: "Curăță cușca", points: 30, icon: "🧹" },
+      { id: `rabbit_play_${Date.now()}`, name: "Joacă cu iepurele", description: "Joacă-te", points: 20, icon: "🐇" },
+    ]},
+    fish: { icon: "🐟", label: "Peștișor", activities: [
+      { id: `fish_feed_${Date.now()}`, name: "Hrănire pești", description: "Hrănește peștii", points: 10, icon: "🪱" },
+      { id: `fish_clean_${Date.now()}`, name: "Curățare acvariu", description: "Curăță acvariul", points: 35, icon: "🧽" },
+    ]},
+    bird: { icon: "🐦", label: "Pasăre", activities: [
+      { id: `bird_feed_${Date.now()}`, name: "Hrănire pasăre", points: 15, icon: "🌾", description: "Hrănește pasărea" },
+      { id: `bird_clean_${Date.now()}`, name: "Curățare colivie", points: 25, icon: "🧹", description: "Curăță colivia" },
+      { id: `bird_play_${Date.now()}`, name: "Joacă cu pasărea", points: 20, icon: "🪶", description: "Vorbește cu pasărea" },
+    ]},
+    turtle: { icon: "🐢", label: "Broască țestoasă", activities: [
+      { id: `turtle_feed_${Date.now()}`, name: "Hrănire țestoasă", points: 15, icon: "🥬", description: "Hrănește țestoasa" },
+      { id: `turtle_clean_${Date.now()}`, name: "Curățare terariu", points: 30, icon: "🧹", description: "Curăță terariul" },
+    ]},
+    other: { icon: "🐾", label: "Alt animal", activities: [
+      { id: `other_feed_${Date.now()}`, name: "Hrănire animal", points: 15, icon: "🍽️", description: "Hrănește animalul" },
+      { id: `other_clean_${Date.now()}`, name: "Curățare spațiu", points: 25, icon: "🧹", description: "Curăță spațiul" },
+      { id: `other_play_${Date.now()}`, name: "Joacă cu animalul", points: 20, icon: "🎾", description: "Joacă-te" },
+    ]},
+  };
+
+  const config = PET_CONFIGS[type] || PET_CONFIGS.other;
+  const newPet = {
+    id: `pet_${Date.now()}`,
+    type,
+    name,
+    icon: config.icon,
+    enabled: true,
+    activities: config.activities,
+    createdAt: new Date().toISOString(),
+  };
+  db.pets.push(newPet);
+
+  // Add pet activities as active tasks for all children
+  const allChildren = db.children || [];
+  config.activities.forEach((act: any) => {
+    allChildren.forEach((child: any) => {
+      db.activeTasks.push({
+        id: `${act.id}_${child.id}`,
+        childId: child.id,
+        name: `${act.name} (${name})`,
+        type: "pet",
+        description: act.description,
+        points: act.points,
+        status: "pending",
+        category: "Pet Care",
+        streak: 0,
+        petActivityId: act.id,
+        petId: newPet.id,
+      });
+    });
+  });
+
+  saveDB(db);
+  res.json({ success: true, db, pet: newPet });
+});
+
+// POST /api/parent/toggle-pet — Activează/dezactivează un animal
+app.post("/api/parent/toggle-pet", authMiddleware, (req, res) => {
+  const { petId, enabled } = req.body;
+  const db = loadDB();
+  if (!db.pets) db.pets = [];
+  const pet = db.pets.find((p: any) => p.id === petId);
+  if (!pet) return res.status(404).json({ error: "Animalul nu a fost găsit!" });
+  pet.enabled = enabled;
+  saveDB(db);
+  res.json({ success: true, db });
+});
+
+// POST /api/parent/update-activity — Actualizează o activitate
+app.post("/api/parent/update-activity", authMiddleware, (req, res) => {
+  const { activityId, name, points } = req.body;
+  const db = loadDB();
+  const task = db.activeTasks.find((t: any) => t.id === activityId);
+  if (task) {
+    if (name) task.name = name;
+    if (points !== undefined) task.points = Number(points);
+  }
+  saveDB(db);
+  res.json({ success: true, db });
+});
+
+// POST /api/parent/delete-activity — Șterge o activitate
+app.post("/api/parent/delete-activity", authMiddleware, (req, res) => {
+  const { activityId } = req.body;
+  const db = loadDB();
+  db.activeTasks = db.activeTasks.filter((t: any) => t.id !== activityId);
+  saveDB(db);
+  res.json({ success: true, db });
+});
+
+// POST /api/parent/add-activity-custom — Adaugă activitate personalizată
+app.post("/api/parent/add-activity-custom", authMiddleware, (req, res) => {
+  const { childId, name, description, points, icon } = req.body;
+  if (!childId || !name) return res.status(400).json({ error: "childId și name sunt obligatorii!" });
+
+  const db = loadDB();
+  const newTask = {
+    id: `custom_act_${Date.now()}`,
+    childId,
+    name,
+    type: "custom",
+    description: description || "",
+    points: Number(points) || 30,
+    status: "pending",
+    category: "Custom",
+    streak: 0,
+    icon: icon || "⭐",
+  };
+  db.activeTasks.push(newTask);
+  saveDB(db);
+  res.json({ success: true, db, task: newTask });
+});
+
+// POST /api/parent/update-reward — Actualizează o recompensă
+app.post("/api/parent/update-reward", authMiddleware, (req, res) => {
+  const { rewardId, costPoints, name } = req.body;
+  const db = loadDB();
+  if (!db.customRewards) db.customRewards = [];
+  const reward = db.customRewards.find((r: any) => r.id === rewardId);
+  if (reward) {
+    if (costPoints !== undefined) reward.costPoints = Number(costPoints);
+    if (name) reward.name = name;
+  }
+  saveDB(db);
+  res.json({ success: true, db });
+});
+
+// POST /api/parent/delete-reward — Șterge o recompensă
+app.post("/api/parent/delete-reward", authMiddleware, (req, res) => {
+  const { rewardId } = req.body;
+  const db = loadDB();
+  if (db.customRewards) {
+    db.customRewards = db.customRewards.filter((r: any) => r.id !== rewardId);
+  }
+  saveDB(db);
+  res.json({ success: true, db });
+});
+
+// POST /api/parent/add-reward — Adaugă recompensă nouă
+app.post("/api/parent/add-reward", authMiddleware, (req, res) => {
+  const { name, costPoints, durationMinutes, icon } = req.body;
+  if (!name) return res.status(400).json({ error: "Numele recompensei este obligatoriu!" });
+
+  const db = loadDB();
+  if (!db.customRewards) db.customRewards = [];
+
+  const newReward = {
+    id: `reward_${Date.now()}`,
+    name,
+    costPoints: Number(costPoints) || 50,
+    durationMinutes: Number(durationMinutes) || 0,
+    icon: icon || "🎁",
+    entityId: undefined,
+  };
+  db.customRewards.push(newReward);
+  saveDB(db);
+  res.json({ success: true, db, reward: newReward });
+});
+
 // ─── AI Service Health Check ─────────────────────────────────────────
 app.get("/api/ai/status", (req, res) => {
   try {
@@ -3707,9 +3957,161 @@ app.get("/metrics", async (_req, res) => {
 export { tasksCompletedCounter, childrenPointsGauge };
 
 // Health check
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString(), db: "postgresql" });
-});
+// ═══════════════════════════════════════════════════════════════════
+// HEALTH DASHBOARD — monitorizare enterprise
+// ═══════════════════════════════════════════════════════════════════
+import healthRoutes from "../routes/health.routes";
+app.use("/api/health", healthRoutes);
+
+// ═══════════════════════════════════════════════════════════════════
+// OPENAPI DOCS — disponibile DOAR în development mode
+// ═══════════════════════════════════════════════════════════════════
+if (process.env.NODE_ENV !== "production") {
+  const OPENAPI_PATH = path.join(process.cwd(), "openapi.yaml");
+  app.get("/api/openapi.yaml", (_req, res) => {
+    try {
+      const spec = fs.readFileSync(OPENAPI_PATH, "utf-8");
+      res.setHeader("Content-Type", "text/yaml");
+      res.send(spec);
+    } catch {
+      res.status(404).json({ error: "OpenAPI spec not found" });
+    }
+  });
+
+  app.get("/api/openapi.json", (_req, res) => {
+    try {
+      const yaml = fs.readFileSync(OPENAPI_PATH, "utf-8");
+      const json = yamlToJson(yaml);
+      res.setHeader("Content-Type", "application/json");
+      res.json(json);
+    } catch (err: any) {
+      res.status(500).json({ error: "Failed to parse OpenAPI spec", details: err.message });
+    }
+  });
+
+  app.get("/api/docs", (_req, res) => {
+    const html = `<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <title>Vacanța Quester - API Docs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+  <style>
+    body { margin: 0; background: #f8fafc; }
+    .swagger-ui .topbar { display: none; }
+    .swagger-ui .information-container .info { margin: 20px 0; }
+    .swagger-ui .info .title { font-size: 28px; font-weight: 800; }
+    .swagger-ui .info .description p { font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: '/api/openapi.yaml',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      presets: [SwaggerUIBundle.presets.apis],
+      layout: "BaseLayout",
+      defaultModelsExpandDepth: 1,
+      defaultModelExpandDepth: 1,
+      docExpansion: "list",
+    });
+  </script>
+</body>
+</html>`;
+    res.setHeader("Content-Type", "text/html");
+    res.send(html);
+  });
+}
+
+/**
+ * Conversie simplă YAML → JSON (fără dependențe externe).
+ * Înlocuiește cu js-yaml când ai nevoie de parse complet.
+ */
+function yamlToJson(yaml: string): any {
+  const result: Record<string, any> = {};
+  const lines = yaml.split("\n");
+  const stack: Array<{ indent: number; key: string; obj: any; isArray?: boolean }> = [];
+  let currentIndent = -1;
+  let currentObj = result;
+
+  for (const line of lines) {
+    const trimmed = line.trimEnd();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const indent = line.length - trimmed.length;
+    const isListItem = trimmed.startsWith("- ");
+    const cleanLine = isListItem ? trimmed.substring(2) : trimmed;
+
+    // Pop stack until we find the right level
+    while (stack.length > 0 && stack[stack.length - 1].indent >= indent) {
+      stack.pop();
+    }
+
+    if (isListItem) {
+      // Array item
+      if (stack.length === 0 || !stack[stack.length - 1].isArray) {
+        // Start new array
+        const key = stack.length > 0 ? stack[stack.length - 1].key : "";
+        const arr: any[] = [];
+        if (stack.length > 0) {
+          stack[stack.length - 1].obj[key] = arr;
+        }
+        stack.push({ indent, key: "", obj: arr, isArray: true });
+        currentObj = arr;
+      }
+      currentObj = stack[stack.length - 1].obj;
+    }
+
+    if (cleanLine.includes(":")) {
+      const colonIdx = cleanLine.indexOf(":");
+      const key = cleanLine.substring(0, colonIdx).trim();
+      let value: any = cleanLine.substring(colonIdx + 1).trim();
+
+      if (value === "" || value === "|") {
+        // Object or multiline — create new object
+        const newObj: Record<string, any> = {};
+        if (isListItem && Array.isArray(currentObj)) {
+          currentObj.push(newObj);
+          stack.push({ indent, key: "", obj: newObj });
+          currentObj = newObj;
+        } else if (stack.length > 0 && stack[stack.length - 1].isArray) {
+          const parent = stack[stack.length - 1].obj;
+          if (Array.isArray(parent)) {
+            const subObj: Record<string, any> = {};
+            parent[parent.length - 1][key] = subObj;
+            stack.push({ indent, key: "", obj: subObj });
+            currentObj = subObj;
+          }
+        } else {
+          const parent = stack.length > 0 ? stack[stack.length - 1].obj : result;
+          parent[key] = newObj;
+          stack.push({ indent, key, obj: newObj });
+          currentObj = newObj;
+        }
+      } else {
+        // Scalar value
+        if (value === "true") value = true;
+        else if (value === "false") value = false;
+        else if (!isNaN(Number(value))) value = Number(value);
+        else if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+
+        if (isListItem && Array.isArray(currentObj)) {
+          currentObj[currentObj.length - 1][key] = value;
+        } else if (stack.length > 0) {
+          stack[stack.length - 1].obj[key] = value;
+        } else {
+          result[key] = value;
+        }
+      }
+    }
+  }
+
+  return result;
+}
 
 // Montează rutele noi ÎNAINTE de catch-all
 app.use("/api/sync", syncRoutes);

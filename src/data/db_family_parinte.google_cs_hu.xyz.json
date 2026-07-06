@@ -3,10 +3,10 @@
   "activeTasks": [],
   "notifications": [
     {
-      "id": "init-notification-1782329800433",
+      "id": "init-notification-1783109585369",
       "childName": "Sistem",
       "message": "Vacanța de vară a început! Aplicația Arcadia Smart Vacation a pornit cu succes. Adaugă copiii în panoul de administrare pentru a începe.",
-      "timestamp": "2026-06-24T19:36:40.433Z",
+      "timestamp": "2026-07-03T20:13:05.369Z",
       "type": "info"
     }
   ],
@@ -48,60 +48,53 @@
     }
   },
   "parentPin": "0000",
-  "parentEmail": "",
+  "parentEmail": "parinte.google@cs-hu.xyz",
   "emailsSent": [],
   "readingHistory": [],
+  "pets": [],
   "suggestions": [],
   "pointsHistory": [
     {
-      "date": "20 iun.",
-      "dateKey": "2026-06-20",
+      "date": "27 iun.",
+      "dateKey": "2026-06-27",
+      "dominic": 10,
+      "sofia": 48
+    },
+    {
+      "date": "28 iun.",
+      "dateKey": "2026-06-28",
+      "dominic": 10,
+      "sofia": 60
+    },
+    {
+      "date": "29 iun.",
+      "dateKey": "2026-06-29",
       "dominic": 16,
       "sofia": 76
     },
     {
-      "date": "21 iun.",
-      "dateKey": "2026-06-21",
+      "date": "30 iun.",
+      "dateKey": "2026-06-30",
       "dominic": 35,
       "sofia": 95
     },
     {
-      "date": "22 iun.",
-      "dateKey": "2026-06-22",
+      "date": "1 iul.",
+      "dateKey": "2026-07-01",
       "dominic": 54,
       "sofia": 114
     },
     {
-      "date": "23 iun.",
-      "dateKey": "2026-06-23",
+      "date": "2 iul.",
+      "dateKey": "2026-07-02",
       "dominic": 69,
       "sofia": 129
     },
     {
-      "date": "24 iun.",
-      "dateKey": "2026-06-24",
+      "date": "3 iul.",
+      "dateKey": "2026-07-03",
       "dominic": 80,
       "sofia": 140
-    },
-    {
-      "date": "25 iun.",
-      "dateKey": "2026-06-25"
-    },
-    {
-      "date": "3 iul.",
-      "dateKey": "2026-07-03"
-    },
-    {
-      "date": "4 iul.",
-      "dateKey": "2026-07-04"
-    },
-    {
-      "date": "5 iul.",
-      "dateKey": "2026-07-05"
-    },
-    {
-      "date": "6 iul.",
-      "dateKey": "2026-07-06"
     }
   ],
   "activityTimeLogs": [],
@@ -115,7 +108,7 @@
     "pass": "",
     "secure": false
   },
-  "lastUpdated": "2026-07-06T20:08:59.073Z",
-  "tomorrowSchedule": {},
-  "currentDateKey": "2026-06-24"
+  "lastUpdated": "2026-07-03T20:13:05.398Z",
+  "currentDateKey": "2026-07-03",
+  "tomorrowSchedule": {}
 }
