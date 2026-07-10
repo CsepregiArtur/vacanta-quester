@@ -131,6 +131,59 @@
       "status": "pending",
       "category": "Household",
       "streak": 4
+    },
+    {
+      "id": "reading-jonel-1782404770785",
+      "childId": "jonel",
+      "name": "Lectură: 🦁 Animale din Junglă (Failsafe)",
+      "type": "reading",
+      "description": "Citește textul de vacanță adaptat și răspunde corect la cele 3 întrebări.",
+      "points": 75,
+      "status": "rejected",
+      "readingTopic": "🦁 Animale din Junglă",
+      "readingPassage": "Subiect: Secretele și Supraviețuirea în Junglă 🦁\n\nJunglele sau pădurile tropicale sunt adevărate paradisuri ale biodiversității! Deși acoperă doar 6% din suprafața Pământului, ele găzduiesc mai mult de jumătate din toate speciile de plante și animale ale lumii. Aici, fiecare animal are o tactică specială de supraviețuire.\n\nDe exemplu, tigrii folosesc dungile lor unice pentru a se camufla în vegetația înaltă, permițându-le să se apropie de pradă nevăzuți. Ghepardul folosește viteza sa incredibilă de peste 100 km/h, în timp ce elefanții din jungle folosesc sunete de joasă frecvență, numite infrasunete, pentru a comunica între ei la distanțe de câțiva kilometri, sunete pe care urechea umană nici nu le poate auzi. Protejarea junglei este vitală pentru aerul pe care îl respirăm și pentru viitorul acestor specii spectaculoase!",
+      "readingQuestions": [
+        {
+          "id": 1,
+          "question": "Ce procent din suprafața Pământului este acoperit în prezent de jungle?",
+          "options": [
+            "Aproximativ 50%",
+            "Aproximativ 6%",
+            "Mai puțin de 1%"
+          ],
+          "correctAnswerIndex": 1,
+          "selectedAnswerIndex": 1,
+          "feedback": "Răspuns corect! Excelent."
+        },
+        {
+          "id": 2,
+          "question": "Cum comunică elefanții la distanțe uimitoare de mii de metri?",
+          "options": [
+            "Folosind infrasunete de joasă frecvență",
+            "Prin semnale cu lanterne",
+            "Prin gesturi ciudate cu coada"
+          ],
+          "correctAnswerIndex": 0,
+          "selectedAnswerIndex": 1,
+          "feedback": "Răspuns greșit! Varianta corectă era \"Folosind infrasunete de joasă frecvență\"."
+        },
+        {
+          "id": 3,
+          "question": "La ce le folosesc cu precădere tigrilor dungile lor faimoase?",
+          "options": [
+            "Să îi sperie pe elefanți",
+            "Pentru camuflaj natural în ierburi",
+            "Să atragă privirile pasagerilor din jeep"
+          ],
+          "correctAnswerIndex": 1,
+          "selectedAnswerIndex": 1,
+          "feedback": "Răspuns corect! Excelent."
+        }
+      ],
+      "difficultyClass": "Standard",
+      "attemptsCount": 3,
+      "firstAttemptScore": 2,
+      "readingScore": 2
     }
   ],
   "notifications": [

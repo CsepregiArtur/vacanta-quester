@@ -271,8 +271,6 @@
     {
       "tokenHash": "$2b$06$8hkUCTrgmZd1qWA4ByoU7.YP3uTts6DbJy8tOREi5xoPYrGGv98y.",
       "email": "rotate@test.com",
-      "issuedAt": "2026-07-06T20:07:33.669Z",
-      "expiresAt": "2026-08-05T20:07:33.669Z"
     }
   ]
 }
