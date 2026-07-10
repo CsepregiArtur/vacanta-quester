@@ -1,0 +1,4 @@
+{"correlation_id":"f08916b0-8706-4249-b676-5ac8a68fd6b0","event_name":"request_received","details":{"method":"GET","path":"/api/docs"},"created_at":"2026-07-06T20:02:59.355Z"}
+{"correlation_id":"680ac7de-5cf9-4fee-80e0-6a8d6ed39a32","event_name":"request_received","details":{"method":"GET","path":"/api/docs"},"created_at":"2026-07-06T20:02:59.685Z"}
+{"correlation_id":"19c09fba-37e2-40b6-904b-15a8626e3460","event_name":"request_received","details":{"method":"GET","path":"/api/openapi.yaml"},"created_at":"2026-07-06T20:03:00.437Z"}
+{"correlation_id":"056c04d1-4086-42e3-a1f1-c3ec997bb1fe","event_name":"request_received","details":{"method":"GET","path":"/api/openapi.yaml"},"created_at":"2026-07-06T20:03:01.650Z"}

@@ -1,0 +1,466 @@
+openapi: 3.1.0
+info:
+  title: Vacanța Quester API
+  description: |
+    API pentru gestionarea activităților copiilor în vacanță.
+    Suportă offline-first, AI reading generation, sync queue, rewards.
+  version: 1.0.0
+  contact:
+    name: Arthur Csepregi
+    email: csepregi.arthur@gmail.com
+servers:
+  - url: https://api.cs-hub.xyz
+    description: Production
+  - url: http://localhost:3000
+    description: Local development
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access Token (15min expiry). Obținut din POST /api/auth/login.
+
+  schemas:
+    # ─── Auth ──────────────────────────────────────────────────────
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, example: "parent@example.com" }
+        password: { type: string, description: "PIN de 4 cifre", example: "1234" }
+
+    LoginResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        user:
+          type: object
+          properties:
+            email: { type: string }
+            name: { type: string }
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer }
+
+    # ─── Child ─────────────────────────────────────────────────────
+    Child:
+      type: object
+      properties:
+        id: { type: string, example: "dominic" }
+        name: { type: string, example: "Dominic" }
+        age: { type: integer, example: 10 }
+        points: { type: integer, example: 150 }
+        avatar: { type: string, example: "🐶" }
+        readingStreak: { type: integer, example: 3 }
+        daysSinceLastReading: { type: integer, example: 1 }
+        version: { type: integer, example: 5 }
+
+    # ─── Activity ──────────────────────────────────────────────────
+    Activity:
+      type: object
+      properties:
+        id: { type: string }
+        childId: { type: string }
+        name: { type: string }
+        type: { type: string, enum: [reading, dog_walk, chore, custom, pet] }
+        description: { type: string }
+        points: { type: integer }
+        status: { type: string, enum: [pending, submitted, approved, rejected] }
+        version: { type: integer }
+
+    # ─── Suggestion ────────────────────────────────────────────────
+    Suggestion:
+      type: object
+      properties:
+        id: { type: string }
+        childId: { type: string }
+        childName: { type: string }
+        type: { type: string, enum: [activity, reward, cashout, other] }
+        title: { type: string }
+        description: { type: string }
+        proposedPointsOrCost: { type: integer }
+        status: { type: string, enum: [pending, approved, rejected] }
+        adminFeedback: { type: string }
+
+    # ─── Reward ────────────────────────────────────────────────────
+    Reward:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        costPoints: { type: integer }
+        durationMinutes: { type: integer }
+        icon: { type: string, example: "🎁" }
+
+    # ─── Pet ───────────────────────────────────────────────────────
+    Pet:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [dog, cat, hamster, rabbit, fish, bird, turtle, other] }
+        name: { type: string }
+        icon: { type: string }
+        enabled: { type: boolean }
+        activities:
+          type: array
+          items:
+            $ref: '#/components/schemas/PetActivity'
+
+    PetActivity:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        points: { type: integer }
+        icon: { type: string }
+        slot: { type: string, enum: [morning, midday, evening] }
+
+    # ─── Sync ──────────────────────────────────────────────────────
+    SyncAction:
+      type: object
+      properties:
+        action: { type: string }
+        payload: { type: object }
+        device_id: { type: string }
+
+    # ─── Health ────────────────────────────────────────────────────
+    HealthStatus:
+      type: object
+      properties:
+        status: { type: string, enum: [ok, degraded, down] }
+        timestamp: { type: string, format: date-time }
+        services:
+          type: object
+          properties:
+            api: { $ref: '#/components/schemas/ServiceStatus' }
+            postgres: { $ref: '#/components/schemas/ServiceStatus' }
+            gemini: { $ref: '#/components/schemas/ServiceStatus' }
+
+    ServiceStatus:
+      type: object
+      properties:
+        status: { type: string, enum: [ok, down, disabled] }
+
+    # ─── Error ─────────────────────────────────────────────────────
+    ApiError:
+      type: object
+      properties:
+        error: { type: string }
+        stack: { type: string }
+
+paths:
+  # ═════════════════════════════════════════════════════════════════
+  # AUTH
+  # ═════════════════════════════════════════════════════════════════
+  /api/auth/register:
+    post:
+      summary: Înregistrare părinte nou
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, name]
+              properties:
+                email: { type: string }
+                name: { type: string }
+                pin: { type: string }
+      responses:
+        '200':
+          description: Cont creat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+
+  /api/auth/login:
+    post:
+      summary: Autentificare cu email + PIN
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autentificare reușită
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+
+  /api/auth/refresh:
+    post:
+      summary: Reîmprospătare token
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: Token reîmprospătat
+
+  # ═════════════════════════════════════════════════════════════════
+  # STATE
+  # ═════════════════════════════════════════════════════════════════
+  /api/state:
+    get:
+      summary: Starea completă a aplicației
+      tags: [State]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: today
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Starea completă (copii, task-uri, recompense, sugestii)
+
+  # ═════════════════════════════════════════════════════════════════
+  # SUGGESTIONS
+  # ═════════════════════════════════════════════════════════════════
+  /api/suggestions/submit:
+    post:
+      summary: Copilul trimite o sugestie (activitate/recompensă/cashout)
+      tags: [Suggestions]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                childId: { type: string }
+                type: { type: string, enum: [activity, reward, cashout, other] }
+                title: { type: string }
+                description: { type: string }
+                proposedPointsOrCost: { type: integer }
+      responses:
+        '200':
+          description: Sugestie înregistrată
+
+  /api/suggestions/respond:
+    post:
+      summary: Părintele aprobă/respinge o sugestie
+      tags: [Suggestions]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                suggestionId: { type: string }
+                status: { type: string, enum: [approved, rejected] }
+                adminFeedback: { type: string }
+      responses:
+        '200':
+          description: Sugestie procesată
+
+  # ═════════════════════════════════════════════════════════════════
+  # SYNC
+  # ═════════════════════════════════════════════════════════════════
+  /api/sync/action:
+    post:
+      summary: Trimite o acțiune de sincronizare
+      tags: [Sync]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncAction'
+      responses:
+        '200':
+          description: Acțiune înregistrată
+
+  /api/sync/pull:
+    get:
+      summary: Trage modificările de la server
+      tags: [Sync]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Modificări de la timestamp-ul specificat
+
+  # ═════════════════════════════════════════════════════════════════
+  # PARENT ADMIN
+  # ═════════════════════════════════════════════════════════════════
+  /api/parent/add-child:
+    post:
+      summary: Adaugă un copil nou
+      tags: [Admin]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                age: { type: integer }
+                avatar: { type: string }
+      responses:
+        '200':
+          description: Copil adăugat
+
+  /api/parent/add-pet:
+    post:
+      summary: Adaugă un animal de companie
+      tags: [Admin]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                type: { type: string, enum: [dog, cat, hamster, rabbit, fish, bird, turtle, other] }
+                name: { type: string }
+      responses:
+        '200':
+          description: Animal adăugat cu activitățile implicite
+
+  /api/parent/add-reward:
+    post:
+      summary: Adaugă o recompensă nouă
+      tags: [Admin]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                costPoints: { type: integer }
+                durationMinutes: { type: integer }
+                icon: { type: string }
+      responses:
+        '200':
+          description: Recompensă adăugată
+
+  /api/parent/add-activity-custom:
+    post:
+      summary: Adaugă o activitate personalizată
+      tags: [Admin]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                childId: { type: string }
+                name: { type: string }
+                description: { type: string }
+                points: { type: integer }
+      responses:
+        '200':
+          description: Activitate adăugată
+
+  # ═════════════════════════════════════════════════════════════════
+  # HEALTH
+  # ═════════════════════════════════════════════════════════════════
+  /api/health:
+    get:
+      summary: Health check simplu
+      tags: [Health]
+      responses:
+        '200':
+          description: Status OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  timestamp: { type: string }
+
+  /api/health/full:
+    get:
+      summary: Health dashboard complet (toate serviciile)
+      tags: [Health]
+      responses:
+        '200':
+          description: Status detaliat per serviciu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+
+  /api/health/metrics:
+    get:
+      summary: Metrici operaționale
+      tags: [Health]
+      responses:
+        '200':
+          description: Toate metricile (sync time, AI time, queue, memory)
+
+  /api/health/ai-cost:
+    get:
+      summary: Costuri AI per family
+      tags: [Health]
+      parameters:
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Costuri AI agregate
+
+  # ═════════════════════════════════════════════════════════════════
+  # DEVICES
+  # ═════════════════════════════════════════════════════════════════
+  /api/devices/register:
+    post:
+      summary: Înregistrează un dispozitiv
+      tags: [Devices]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_id: { type: string }
+                device_name: { type: string }
+                platform: { type: string }
+      responses:
+        '200':
+          description: Dispozitiv înregistrat
+
+  /api/devices:
+    get:
+      summary: Lista dispozitivelor familiei
+      tags: [Devices]
+      security: [{ BearerAuth: [] }]
+      responses:
+        '200':
+          description: Lista dispozitivelor
+
+  # ═════════════════════════════════════════════════════════════════
+  # METRICS (Prometheus)
+  # ═════════════════════════════════════════════════════════════════
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      tags: [Infrastructure]
+      responses:
+        '200':
+          description: Metrice Prometheus format text

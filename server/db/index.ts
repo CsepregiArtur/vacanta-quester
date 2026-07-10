@@ -22,9 +22,34 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
-pool.on("error", (err) => {
-  console.error("[DB] Pool error:", err.message);
+// Pool error handler — silent (userul nu trebuie să vadă probleme de conexiune)
+pool.on("error", () => {
+  // PG indisponibil — se folosește JSON fallback fără zgomot
 });
+
+/**
+ * Verifică rapid dacă PostgreSQL e disponibil.
+ * Folosește un client direct cu timeout scurt — nu așteaptă retry-urile pool-ului.
+ */
+let pgAvailable = false;
+
+export async function checkPostgresHealth(): Promise<boolean> {
+  if (pgAvailable) return true;
+  try {
+    const client = await pool.connect();
+    await client.query("SELECT 1");
+    client.release();
+    pgAvailable = true;
+    return true;
+  } catch {
+    pgAvailable = false;
+    return false;
+  }
+}
+
+export function isPostgresAvailable(): boolean {
+  return pgAvailable;
+}
 
 export async function query<T = any>(
   text: string,
@@ -57,6 +82,13 @@ export async function transaction<T>(
 }
 
 export async function initDatabase(): Promise<void> {
+  // Verifică rapid disponibilitatea PostgreSQL
+  const isAvailable = await checkPostgresHealth();
+  if (!isAvailable) {
+    pgAvailable = false;
+    throw new Error("PostgreSQL indisponibil — se folosește JSON fallback");
+  }
+
   const tables = [
     `CREATE TABLE IF NOT EXISTS families (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -29,13 +29,6 @@ import {
   Share2,
   Send,
   Lightbulb,
-  CloudSun,
-  Wind,
-  Droplets,
-  Thermometer,
-  Sun,
-  Search,
-  MapPin,
   Upload
 } from "lucide-react";
 import { motion, AnimatePresence, animate } from "motion/react";
@@ -185,137 +178,6 @@ export default function KidDashboard({ childId, state, onRefresh, theme, onChang
       milestoneBorder: "border-stone-600"
     }
   }[theme || "nintendo"];
-
-  // Custom Weather State
-  interface WeatherStats {
-    temp: number;
-    feelsLike: number;
-    humidity: number;
-    windSpeed: number;
-    precipitation: number;
-    weatherCode: number;
-    cityName: string;
-  }
-
-  interface CityConfig {
-    name: string;
-    lat: number;
-    lon: number;
-  }
-
-  const ROMANIAN_CITIES: CityConfig[] = [
-    { name: "Satu Mare 🌾", lat: 47.79, lon: 22.89 },
-    { name: "Cluj-Napoca 🏰", lat: 46.7712, lon: 23.6236 },
-    { name: "București 🏛️", lat: 44.4268, lon: 26.1025 },
-    { name: "Brașov ⛰️", lat: 45.658, lon: 25.6012 },
-    { name: "Constanța 🏖️", lat: 44.1792, lon: 28.6498 },
-    { name: "Iași 🎭", lat: 47.1585, lon: 27.6014 },
-    { name: "Timișoara 🎚️", lat: 45.7537, lon: 21.2257 }
-  ];
-
-  const [activeCity, setActiveCity] = useState<CityConfig>({
-    name: "Satu Mare 🌾",
-    lat: 47.79,
-    lon: 22.89
-  });
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchFeedback, setSearchFeedback] = useState("");
-
-  const handleSearchCity = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    setSearchLoading(true);
-    setSearchFeedback("");
-    setSearchResults([]);
-    try {
-      const res = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(searchQuery.trim())}&count=6&language=ro`
-      );
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      if (data && data.results && data.results.length > 0) {
-        setSearchResults(data.results);
-      } else {
-        setSearchFeedback("Nu s-au găsit localități care să se potrivească. Încearcă alt nume!");
-      }
-    } catch (err) {
-      setSearchFeedback("Eroare la căutarea localității externe.");
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const handleSelectSearchResult = (result: any) => {
-    const formattedName = `${result.name}${result.admin1 ? `, ${result.admin1}` : ""}${result.country ? ` (${result.country})` : ""} 📍`;
-    setActiveCity({
-      name: formattedName,
-      lat: result.latitude,
-      lon: result.longitude
-    });
-    setSearchResults([]);
-    setSearchQuery("");
-  };
-
-  const [weather, setWeather] = useState<WeatherStats | null>(null);
-  const [weatherLoading, setWeatherLoading] = useState(false);
-  const [weatherError, setWeatherError] = useState("");
-
-  const getWeatherDetails = (code: number): { desc: string; emoji: string; bgClass: string; recColor: string; activity: string } => {
-    // Standard WMO Weather Interpretation Codes
-    if (code === 0) return { desc: "Cer complet senin", emoji: "☀️", bgClass: "bg-amber-50/50 border-amber-200 text-amber-950", recColor: "text-amber-805", activity: "Vreme uimitor de frumoasă! ☀️ Perfect pentru a plimba cățelul Arcadia sau a merge pe bicicletă!" };
-    if (code <= 3) return { desc: "Parțial noros", emoji: "🌤️", bgClass: "bg-sky-50/50 border-sky-200 text-sky-955", recColor: "text-sky-800", activity: "Vreme plăcută, soare cu nori 🌤️. O zi excelentă pentru joacă în aer liber!" };
-    if (code === 45 || code === 48) return { desc: "Ceață", emoji: "🌫️", bgClass: "bg-slate-50 border-slate-200 text-slate-800", recColor: "text-slate-600", activity: "Este ceață afară 🌫️. Fii atent la drum dacă ieși, sau mai bine rezolvă o lectură!" };
-    if (code >= 51 && code <= 55) return { desc: "Burniță ușoară", emoji: "🌧️", bgClass: "bg-indigo-50 border-indigo-200 text-indigo-950", recColor: "text-indigo-805", activity: "Cade o burniță ușoară 🌧️. Ia-ți pelerina dacă pleci, sau profită să înveți de acasă!" };
-    if (code >= 61 && code <= 65) return { desc: "Ploaie activă", emoji: "🌧️🌧️", bgClass: "bg-blue-50/80 border-blue-200 text-blue-950", recColor: "text-blue-800", activity: "Plouă afară! 🌧️ Rămâi la adăpost și dovedește o treabă casnică ori citește o poveste!" };
-    if (code >= 71 && code <= 75) return { desc: "Ninsoare", emoji: "❄️", bgClass: "bg-cyan-50 border-cyan-200 text-cyan-950", recColor: "text-cyan-800", activity: "Ninge cu fulgi pufoși! ❄️ Îmbracă-te foarte gros dacă ieși afară la un bulgăre de zăpadă!" };
-    if (code >= 80 && code <= 82) return { desc: "Averse de ploaie", emoji: "🌦️", bgClass: "bg-blue-50 border-blue-200 text-blue-905", recColor: "text-blue-800", activity: "Averse trecătoare 🌦️. Fii atent să nu te prindă stropii, așteaptă soarele în casă!" };
-    if (code >= 95) return { desc: "Furtună cu fulgere", emoji: "⛈️", bgClass: "bg-purple-50 border-purple-200 text-purple-950", recColor: "text-purple-800", activity: "Furtună electrică! ⛈️ Nu ieși deloc afară. Stai la căldură și distrează-te în siguranță pe tabletă!" };
-    
-    return { desc: "Condiții stabile", emoji: "☁️", bgClass: "bg-slate-50 border-slate-200 text-slate-800", recColor: "text-slate-650", activity: "Verifică cerul înainte de a pleca. Fii pregătit pentru orice aventură!" };
-  };
-
-  useEffect(() => {
-    let active = true;
-    const loadWeather = async () => {
-      setWeatherLoading(true);
-      setWeatherError("");
-      try {
-        const response = await fetch(
-          `https://api.open-meteo.com/v1/forecast?latitude=${activeCity.lat}&longitude=${activeCity.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&timezone=auto`
-        );
-        if (!response.ok) {
-          throw new Error("Nu am putut interoga serverul meteo extern.");
-        }
-        const parsed = await response.json();
-        if (active && parsed && parsed.current) {
-          setWeather({
-            temp: parsed.current.temperature_2m,
-            feelsLike: parsed.current.apparent_temperature,
-            humidity: parsed.current.relative_humidity_2m,
-            windSpeed: parsed.current.wind_speed_10m,
-            precipitation: parsed.current.precipitation,
-            weatherCode: parsed.current.weather_code,
-            cityName: activeCity.name
-          });
-        }
-      } catch (err: any) {
-        if (active) {
-          setWeatherError("Nu s-au putut prelua condițiile meteo curente de la serviciul meteorologic.");
-        }
-      } finally {
-        if (active) {
-          setWeatherLoading(false);
-        }
-      }
-    };
-    loadWeather();
-    return () => {
-      active = false;
-    };
-  }, [activeCity]);
 
   // Streak Claim States
   const [claimingMilestone, setClaimingMilestone] = useState<string | null>(null);
@@ -1436,6 +1298,69 @@ export default function KidDashboard({ childId, state, onRefresh, theme, onChang
         handleBuyReward={handleBuyReward}
         handleCashoutPoints={handleCashoutPoints}
       />
+
+      {/* SECTIUNEA 3.5: CERERILE MELE — vezi toate solicitările tale */}
+      <div className={`${dashboardStyles.card}`}>
+        <h3 className={`${dashboardStyles.heading} flex items-center gap-2 mb-4`}>
+          <Send className="w-5 h-5 text-indigo-500" />
+          Cererile Mele 📋
+        </h3>
+        <p className={`${dashboardStyles.text} mb-4`}>
+          Aici vezi toate cererile tale trimise către părinți — activități, recompense sau schimb în bani.
+        </p>
+        {(() => {
+          const mySuggestions = state.suggestions
+            .filter(s => s.childId === childId)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          if (mySuggestions.length === 0) {
+            return (
+              <div className="p-6 text-center border-2 border-dashed border-slate-200 rounded-2xl">
+                <p className="text-slate-400 font-semibold text-xs">Nu ai trimis nicio cerere încă. Propune o activitate sau recompensă mai sus! 🚀</p>
+              </div>
+            );
+          }
+          return (
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+              {mySuggestions.map((sug) => {
+                const statusIcon = sug.status === 'approved' ? '✅' : sug.status === 'rejected' ? '❌' : '⏳';
+                const statusBg = sug.status === 'approved' ? 'bg-emerald-50 border-emerald-200' : sug.status === 'rejected' ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200';
+                return (
+                  <div key={sug.id} className={`p-3 rounded-xl border-2 ${statusBg} flex items-start gap-3`}>
+                    <span className="text-lg mt-0.5">{statusIcon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-xs text-slate-900">{sug.title}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                          sug.type === 'activity' ? 'bg-blue-100 text-blue-700' :
+                          sug.type === 'reward' ? 'bg-purple-100 text-purple-700' :
+                          sug.type === 'cashout' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'
+                        }`}>
+                          {sug.type === 'activity' ? 'Activitate' : sug.type === 'reward' ? 'Recompensă' : sug.type === 'cashout' ? 'Bani' : 'Altul'}
+                        </span>
+                      </div>
+                      {sug.description && <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">{sug.description}</p>}
+                      <div className="flex items-center gap-3 mt-1.5 text-[9px] text-slate-400 font-semibold">
+                        <span>{new Date(sug.createdAt).toLocaleDateString('ro-RO', { hour: '2-digit', minute: '2-digit' })}</span>
+                        {sug.proposedPointsOrCost !== undefined && (
+                          <span>{sug.type === 'cashout' ? `${sug.proposedPointsOrCost} Pct → ${Math.round(sug.proposedPointsOrCost / 10)} RON` : `${sug.proposedPointsOrCost} Pct`}</span>
+                        )}
+                        {sug.status === 'approved' && <span className="text-emerald-600 font-bold">Aprobată ✅</span>}
+                        {sug.status === 'rejected' && <span className="text-rose-500 font-bold">Respinsă</span>}
+                        {sug.status === 'pending' && <span className="text-amber-600 font-bold animate-pulse">În așteptare</span>}
+                      </div>
+                      {sug.adminFeedback && (
+                        <div className="mt-1.5 text-[10px] text-slate-600 bg-white/60 rounded-lg p-2 border border-slate-100">
+                          <span className="font-bold">Răspuns părinte:</span> {sug.adminFeedback}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+      </div>
 
       {/* SECTIUNEA 4: PROPUNE O ACTIVITATE/RECOMPENSĂ NOUĂ & ASISTENT COMPANION */}
       <HomeAssistantWidget

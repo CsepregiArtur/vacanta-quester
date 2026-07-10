@@ -29,7 +29,8 @@ import {
   Server,
   Plus,
   Minus,
-  X
+  X,
+  Award
 } from "lucide-react";
 import { AppState, Child, NextDayTopicProposal, ParentNotification } from "../types";
 import { dashboardThemes } from "../styles/themes";
@@ -116,9 +117,11 @@ interface ParentDashboardProps {
   onLock?: () => void;
   theme?: ThemeName;
   onChangeTheme?: (theme: ThemeName) => void;
+  kidFullScreen?: boolean;
+  onToggleKidFullScreen?: () => void;
 }
 
-export default function ParentDashboard({ state, onRefresh, onLock, theme, onChangeTheme }: ParentDashboardProps) {
+export default function ParentDashboard({ state, onRefresh, onLock, theme, onChangeTheme, kidFullScreen, onToggleKidFullScreen }: ParentDashboardProps) {
   const dashboardStyles = dashboardThemes[theme || "nintendo"];
 
   // Custom secure iframe-friendly modal confirmations
@@ -211,6 +214,21 @@ export default function ParentDashboard({ state, onRefresh, onLock, theme, onCha
   const [marketCustomPoints, setMarketCustomPoints] = useState(30);
   const [isSubmitingMarket, setIsSubmitingMarket] = useState(false);
   const [marketFeedback, setMarketFeedback] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Admin Config Panel States
+  const [adminTab, setAdminTab] = useState<'activities' | 'rewards'>('activities');
+  const [editingActivity, setEditingActivity] = useState<string | null>(null);
+  const [editActPoints, setEditActPoints] = useState(0);
+  const [editActName, setEditActName] = useState('');
+  const [editRewardPoints, setEditRewardPoints] = useState<Record<string, number>>({});
+  const [newActName, setNewActName] = useState('');
+  const [newActDesc, setNewActDesc] = useState('');
+  const [newActPoints, setNewActPoints] = useState(30);
+  const [newActIcon, setNewActIcon] = useState('⭐');
+  const [newRewardName, setNewRewardName] = useState('');
+  const [newRewardCost, setNewRewardCost] = useState(50);
+  const [newRewardDuration, setNewRewardDuration] = useState(30);
+  const [newRewardIcon, setNewRewardIcon] = useState('🎁');
 
   // Selected children reports & logs states
   const [selectedReportChild, setSelectedReportChild] = useState<"dominic" | "sofia">("dominic");
@@ -804,6 +822,20 @@ export default function ParentDashboard({ state, onRefresh, onLock, theme, onCha
             <Trash2 className="w-4 h-4" />
             Reset General
           </button>
+          {onToggleKidFullScreen && (
+            <button
+              onClick={onToggleKidFullScreen}
+              className={`px-4 py-2.5 text-xs font-black rounded-2xl transition duration-150 flex items-center gap-1.5 border-2 cursor-pointer uppercase tracking-wider shadow-xs ${
+                kidFullScreen 
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500' 
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300'
+              }`}
+              title="Activează/dezactivează ecranul complet pentru copii (ascunde meniul lateral)"
+            >
+              {kidFullScreen ? <Check className="w-4 h-4" /> : <span className="text-base">🖥️</span>}
+              {kidFullScreen ? 'Mod Copil 🌟' : 'Ecran Copil 👶'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -911,22 +943,22 @@ export default function ParentDashboard({ state, onRefresh, onLock, theme, onCha
                       </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className={`${dashboardStyles.subCard} flex flex-col justify-between`}>
-                        <div>
+                    <div className={`${dashboardStyles.subCard}`}>
+                      <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <div className="min-w-0 flex-1">
                           <span className={dashboardStyles.label}>Puncte strânse</span>
-                          <div className="text-base font-black mt-1">{child.points} Pcte</div>
+                          <div className="text-lg font-black mt-0.5 truncate">{child.points} Pcte</div>
+                          <div className="flex gap-1.5 mt-2 flex-wrap">
+                            <button onClick={() => handleQuickAdjustPoints(child.id, child.points, -10)} className={dashboardStyles.buttonRed + " text-[8px] py-1 px-2 leading-tight"} title="Scade 10 puncte">-10</button>
+                            <button onClick={() => handleQuickAdjustPoints(child.id, child.points, -50)} className={dashboardStyles.buttonRed + " text-[8px] py-1 px-2 leading-tight"} title="Scade 50 puncte">-50</button>
+                            <button onClick={() => handleQuickAdjustPoints(child.id, child.points, 10)} className={dashboardStyles.buttonGreen + " text-[8px] py-1 px-2 leading-tight"} title="Adaugă 10 puncte">+10</button>
+                            <button onClick={() => handleQuickAdjustPoints(child.id, child.points, 50)} className={dashboardStyles.buttonGreen + " text-[8px] py-1 px-2 leading-tight"} title="Adaugă 50 puncte">+50</button>
+                          </div>
                         </div>
-                        <div className="flex gap-1 mt-2 pt-2 border-t items-center justify-between">
-                          <button onClick={() => handleQuickAdjustPoints(child.id, child.points, -10)} className={dashboardStyles.buttonRed + " text-[9px] py-1 px-1 flex-1"} title="Scade 10 puncte">-10</button>
-                          <button onClick={() => handleQuickAdjustPoints(child.id, child.points, -50)} className={dashboardStyles.buttonRed + " text-[9px] py-1 px-1 flex-1"} title="Scade 50 puncte">-50</button>
-                          <button onClick={() => handleQuickAdjustPoints(child.id, child.points, 10)} className={dashboardStyles.buttonGreen + " text-[9px] py-1 px-1 flex-1"} title="Adaugă 10 puncte">+10</button>
-                          <button onClick={() => handleQuickAdjustPoints(child.id, child.points, 50)} className={dashboardStyles.buttonGreen + " text-[9px] py-1 px-1 flex-1"} title="Adaugă 50 puncte">+50</button>
+                        <div className="text-right shrink-0">
+                          <span className={dashboardStyles.label}>Streak lectură</span>
+                          <div className="text-lg font-black mt-0.5 whitespace-nowrap">{child.readingStreak} zile</div>
                         </div>
-                      </div>
-                      <div className={`${dashboardStyles.subCard}`}>
-                        <span className={dashboardStyles.label}>Streak lectură</span>
-                        <div className="text-base font-black mt-1">{child.readingStreak} zile</div>
                       </div>
                     </div>
 
@@ -1035,6 +1067,436 @@ export default function ParentDashboard({ state, onRefresh, onLock, theme, onCha
           </div>
         </div>
       </div>
+
+      {/* ─── SECTIUNEA NOUĂ: GESTIONARE COPII — ADAUGĂ COPIL NOU ─── */}
+      <div className={`${dashboardStyles.card}`} id="parent-add-child">
+        <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-4 mb-4">
+          <div className="p-2 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-150">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-black text-slate-900 uppercase tracking-wide">
+              Gestionează Copiii 👶
+            </h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wide mt-0.5">
+              Adaugă copii noi sau vezi lista existentă
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Lista copiilor existenți */}
+          <div>
+            <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-3">Copii existenți ({state.children.length})</h4>
+            <div className="space-y-2">
+              {state.children.map((child) => (
+                <div key={child.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-2xl">{child.avatar}</span>
+                  <div className="flex-1">
+                    <p className="font-bold text-xs text-slate-900">{child.name}</p>
+                    <p className="text-[10px] text-slate-400">{child.age} ani • {child.points} puncte</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Formular adăugare copil nou */}
+          <div className="bg-indigo-50/30 rounded-2xl border-2 border-indigo-100 p-4">
+            <h4 className="text-xs font-black text-indigo-700 uppercase tracking-wider mb-3">Adaugă copil nou ➕</h4>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const formData = new FormData(form);
+              const name = formData.get('childName') as string;
+              const age = Number(formData.get('childAge'));
+              const avatar = formData.get('childAvatar') as string;
+              if (!name || !age) return;
+              try {
+                const res = await fetch('/api/parent/add-child', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name, age, avatar: avatar || '🐶' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                  setSuccessBanner(`Copilul ${name} a fost adăugat cu succes! 🎉`);
+                  onRefresh();
+                  form.reset();
+                } else {
+                  setErrorBanner(data.error || 'Eroare la adăugare copil.');
+                }
+              } catch {
+                setErrorBanner('Eroare de rețea.');
+              }
+            }} className="space-y-3">
+              <div>
+                <label className="block text-slate-500 font-bold uppercase tracking-wider text-[9px] mb-1">Nume copil</label>
+                <input name="childName" required className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-xs font-medium bg-white focus:outline-none focus:border-indigo-500" placeholder="Ex: Andrei" />
+              </div>
+              <div>
+                <label className="block text-slate-500 font-bold uppercase tracking-wider text-[9px] mb-1">Vârstă</label>
+                <input name="childAge" type="number" min={3} max={18} required className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-xs font-medium bg-white focus:outline-none focus:border-indigo-500" placeholder="Ex: 8" />
+              </div>
+              <div>
+                <label className="block text-slate-500 font-bold uppercase tracking-wider text-[9px] mb-1">Avatar</label>
+                <select name="childAvatar" className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-xs font-medium bg-white focus:outline-none focus:border-indigo-500">
+                  <option value="🐶">🐶 Câine</option>
+                  <option value="🐱">🐱 Pisică</option>
+                  <option value="🦊">🦊 Vulpe</option>
+                  <option value="🐼">🐼 Panda</option>
+                  <option value="🐰">🐰 Iepure</option>
+                  <option value="🦁">🦁 Leu</option>
+                  <option value="🐸">🐸 Broscuță</option>
+                  <option value="🐲">🐲 Dragon</option>
+                  <option value="🦸">🦸 Supererou</option>
+                  <option value="🧑‍🚀">🧑‍🚀 Astronaut</option>
+                </select>
+              </div>
+              <button type="submit" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl uppercase tracking-wider cursor-pointer transition shadow-sm">
+                <Plus className="w-4 h-4 inline mr-1" />
+                Adaugă Copil
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── SECTIUNEA NOUĂ: ANIMALE DE COMPANIE ─── */}
+      <div className={`${dashboardStyles.card}`} id="parent-pets">
+        <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-4 mb-4">
+          <div className="p-2 bg-amber-50 text-amber-700 rounded-xl border border-amber-150">
+            <Activity className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-black text-slate-900 uppercase tracking-wide">
+              Animale de Companie 🐾
+            </h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wide mt-0.5">
+              Adaugă animale și configurează activitățile lor
+            </p>
+          </div>
+        </div>
+
+        {(() => {
+          const pets: any[] = (state as any).pets || [];
+          return (
+            <div className="space-y-4">
+              {pets.length === 0 && (
+                <div className="p-6 text-center border-2 border-dashed border-slate-200 rounded-2xl">
+                  <p className="text-slate-400 font-semibold text-xs mb-4">Nu ai adăugat încă animale de companie.</p>
+                </div>
+              )}
+              {pets.map((pet: any) => (
+                <div key={pet.id} className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{pet.icon}</span>
+                      <div>
+                        <p className="font-bold text-sm text-slate-900">{pet.name}</p>
+                        <p className="text-[10px] text-slate-400">{pet.type}</p>
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs font-semibold">
+                      <input type="checkbox" checked={pet.enabled} onChange={async () => {
+                        await fetch('/api/parent/toggle-pet', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ petId: pet.id, enabled: !pet.enabled })
+                        });
+                        onRefresh();
+                      }} className="rounded" />
+                      Activ
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {pet.activities?.map((act: any) => (
+                      <div key={act.id} className="flex items-center gap-2 p-2 bg-white rounded-xl border border-slate-100">
+                        <span>{act.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-bold text-slate-800 truncate">{act.name}</p>
+                          <p className="text-[9px] text-slate-400">{act.points} puncte</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {/* Formular adăugare animal nou */}
+              <details className="bg-amber-50/30 rounded-2xl border-2 border-amber-100 p-4">
+                <summary className="text-xs font-black text-amber-700 uppercase tracking-wider cursor-pointer">
+                  <Plus className="w-4 h-4 inline mr-1" /> Adaugă animal de companie
+                </summary>
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.target as HTMLFormElement;
+                  const formData = new FormData(form);
+                  const petType = formData.get('petType') as string;
+                  const petName = formData.get('petName') as string;
+                  if (!petType || !petName) return;
+                  try {
+                    const res = await fetch('/api/parent/add-pet', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ type: petType, name: petName })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      setSuccessBanner(`Animalul ${petName} a fost adăugat cu activitățile implicite! 🐾`);
+                      onRefresh();
+                      form.reset();
+                    } else {
+                      setErrorBanner(data.error || 'Eroare la adăugare animal.');
+                    }
+                  } catch {
+                    setErrorBanner('Eroare de rețea.');
+                  }
+                }} className="space-y-3 mt-3">
+                  <div>
+                    <label className="block text-slate-500 font-bold uppercase tracking-wider text-[9px] mb-1">Tip animal</label>
+                    <select name="petType" required className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-xs font-medium bg-white focus:outline-none focus:border-amber-500">
+                      <option value="dog">🐕 Câine</option>
+                      <option value="cat">🐈 Pisică</option>
+                      <option value="hamster">🐹 Hamster</option>
+                      <option value="rabbit">🐰 Iepure</option>
+                      <option value="fish">🐟 Peștișor</option>
+                      <option value="bird">🐦 Pasăre</option>
+                      <option value="turtle">🐢 Broască țestoasă</option>
+                      <option value="other">🐾 Alt animal</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-500 font-bold uppercase tracking-wider text-[9px] mb-1">Numele animalului</label>
+                    <input name="petName" required className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-xs font-medium bg-white focus:outline-none focus:border-amber-500" placeholder="Ex: Rex, Kitty, etc." />
+                  </div>
+                  <button type="submit" className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl uppercase tracking-wider cursor-pointer transition shadow-sm">
+                    <Plus className="w-4 h-4 inline mr-1" /> Adaugă Animal
+                  </button>
+                </form>
+              </details>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* ─── SECTIUNEA NOUĂ: PANOU ADMIN — CONFIGURARE ACTIVITĂȚI ȘI RECOMPENSE ─── */}
+      <div className={`${dashboardStyles.card}`} id="parent-admin-config">
+        <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-4 mb-4">
+          <div className="p-2 bg-purple-50 text-purple-700 rounded-xl border border-purple-150">
+            <Settings className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-black text-slate-900 uppercase tracking-wide">
+              Configurare Activități & Recompense ⚙️
+            </h3>
+            <p className="text-xs text-slate-400 font-bold uppercase tracking-wide mt-0.5">
+              Personalizează activitățile și recompensele din sistem
+            </p>
+          </div>
+        </div>
+
+        {/* Tabs: Activități | Recompense */}
+        <div className="space-y-4">
+              {/* Tab buttons */}
+              <div className="flex gap-2">
+                <button onClick={() => setAdminTab('activities')} className={`px-4 py-2 text-xs font-black rounded-xl uppercase tracking-wider transition cursor-pointer ${adminTab === 'activities' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                  <Activity className="w-4 h-4 inline mr-1" /> Activități
+                </button>
+                <button onClick={() => setAdminTab('rewards')} className={`px-4 py-2 text-xs font-black rounded-xl uppercase tracking-wider transition cursor-pointer ${adminTab === 'rewards' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                  <Award className="w-4 h-4 inline mr-1" /> Recompense
+                </button>
+              </div>
+
+              {/* Tab: Activități */}
+              {adminTab === 'activities' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
+                    {state.activeTasks
+                      .filter(t => t.childId === (state.children[0]?.id || ''))
+                      .slice(0, 30)
+                      .concat((state as any).customActivities || [])
+                      .map((task: any, idx: number) => {
+                        const isEditing = editingActivity === (task.id || `idx_${idx}`);
+                        return (
+                          <div key={task.id || idx} className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-800">{task.name}</span>
+                              <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{task.points} Pct</span>
+                            </div>
+                            {isEditing ? (
+                              <div className="space-y-2">
+                                <input value={editActName} onChange={e => setEditActName(e.target.value)} className="w-full px-2 py-1 text-[10px] border rounded-lg" placeholder="Nume" />
+                                <div className="flex gap-2">
+                                  <input type="number" value={editActPoints} onChange={e => setEditActPoints(Number(e.target.value))} className="w-20 px-2 py-1 text-[10px] border rounded-lg" />
+                                  <button onClick={async () => {
+                                    await fetch('/api/parent/update-activity', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ activityId: task.id, name: editActName, points: editActPoints })
+                                    });
+                                    setEditingActivity(null);
+                                    onRefresh();
+                                  }} className="px-2 py-1 bg-indigo-600 text-white text-[9px] font-black rounded-lg cursor-pointer">Salvează</button>
+                                  <button onClick={() => setEditingActivity(null)} className="px-2 py-1 bg-slate-200 text-[9px] rounded-lg cursor-pointer">X</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex gap-1">
+                                <button onClick={() => { setEditingActivity(task.id); setEditActName(task.name); setEditActPoints(task.points); }} className="text-[9px] px-2 py-1 bg-slate-100 rounded-lg hover:bg-slate-200 cursor-pointer">✏️</button>
+                                <button onClick={async () => {
+                                  if (confirm(`Ștergi activitatea "${task.name}"?`)) {
+                                    await fetch('/api/parent/delete-activity', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ activityId: task.id })
+                                    });
+                                    onRefresh();
+                                  }
+                                }} className="text-[9px] px-2 py-1 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 cursor-pointer">🗑️</button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  {/* Add new activity form */}
+                  <details className="bg-indigo-50/30 rounded-2xl border-2 border-indigo-100 p-4">
+                    <summary className="text-xs font-black text-indigo-700 uppercase tracking-wider cursor-pointer">
+                      <Plus className="w-4 h-4 inline mr-1" /> Adaugă activitate nouă
+                    </summary>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      const childId = state.children[0]?.id;
+                      if (!childId) return;
+                      await fetch('/api/parent/add-activity-custom', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          childId,
+                          name: newActName,
+                          description: newActDesc,
+                          points: newActPoints,
+                          icon: newActIcon,
+                        })
+                      });
+                      setNewActName(''); setNewActDesc(''); setNewActPoints(30);
+                      onRefresh();
+                    }} className="space-y-3 mt-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <input value={newActName} onChange={e => setNewActName(e.target.value)} required placeholder="Nume activitate" className="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs bg-white" />
+                        <input value={newActDesc} onChange={e => setNewActDesc(e.target.value)} placeholder="Descriere" className="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs bg-white" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-[8px] font-bold text-slate-400 uppercase mb-1">Puncte</label>
+                          <input type="number" value={newActPoints} onChange={e => setNewActPoints(Number(e.target.value))} className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-xs bg-white" />
+                        </div>
+                        <div>
+                          <label className="block text-[8px] font-bold text-slate-400 uppercase mb-1">Iconiță</label>
+                          <input value={newActIcon} onChange={e => setNewActIcon(e.target.value)} className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-xs bg-white" />
+                        </div>
+                      </div>
+                      <button type="submit" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl uppercase tracking-wider cursor-pointer transition shadow-sm">
+                        <Plus className="w-4 h-4 inline mr-1" /> Adaugă Activitate
+                      </button>
+                    </form>
+                  </details>
+                </div>
+              )}
+
+              {/* Tab: Recompense */}
+              {adminTab === 'rewards' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
+                    {(state.customRewards || []).map((reward) => {
+                      const currentPoints = editRewardPoints[reward.id] ?? reward.costPoints;
+                      return (
+                        <div key={reward.id} className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1 text-xs font-bold text-slate-800">
+                              <span>{reward.icon}</span> {reward.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">{currentPoints} Pct</span>
+                            {reward.durationMinutes > 0 && <span className="text-[10px] text-slate-400">{reward.durationMinutes} min</span>}
+                          </div>
+                          <div className="flex gap-1">
+                            <input type="number" value={currentPoints} onChange={e => {
+                              setEditRewardPoints(prev => ({ ...prev, [reward.id]: Number(e.target.value) }));
+                            }} className="w-16 px-2 py-1 text-[10px] border rounded-lg" />
+                            <button onClick={async () => {
+                              await fetch('/api/parent/update-reward', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ rewardId: reward.id, costPoints: currentPoints })
+                              });
+                              onRefresh();
+                            }} className="px-2 py-1 bg-purple-600 text-white text-[9px] font-black rounded-lg cursor-pointer">Salvează</button>
+                            <button onClick={async () => {
+                              if (confirm(`Ștergi recompensa "${reward.name}"?`)) {
+                                await fetch('/api/parent/delete-reward', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ rewardId: reward.id })
+                                });
+                                onRefresh();
+                              }
+                            }} className="px-2 py-1 bg-rose-50 text-rose-600 text-[9px] rounded-lg cursor-pointer">🗑️</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {(state.customRewards || []).length === 0 && (
+                      <p className="text-xs text-slate-400 col-span-full text-center p-4">Nu există recompense personalizate. Adaugă una mai jos!</p>
+                    )}
+                  </div>
+
+                  {/* Add new reward form */}
+                  <details className="bg-purple-50/30 rounded-2xl border-2 border-purple-100 p-4">
+                    <summary className="text-xs font-black text-purple-700 uppercase tracking-wider cursor-pointer">
+                      <Plus className="w-4 h-4 inline mr-1" /> Adaugă recompensă nouă
+                    </summary>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      await fetch('/api/parent/add-reward', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          name: newRewardName,
+                          costPoints: newRewardCost,
+                          durationMinutes: newRewardDuration,
+                          icon: newRewardIcon,
+                        })
+                      });
+                      setNewRewardName(''); setNewRewardCost(50); setNewRewardDuration(30);
+                      onRefresh();
+                    }} className="space-y-3 mt-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <input value={newRewardName} onChange={e => setNewRewardName(e.target.value)} required placeholder="Nume recompensă" className="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs bg-white" />
+                        <input value={newRewardIcon} onChange={e => setNewRewardIcon(e.target.value)} placeholder="Iconiță" className="px-3 py-2 border-2 border-slate-200 rounded-xl text-xs bg-white" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[8px] font-bold text-slate-400 uppercase mb-1">Cost puncte</label>
+                          <input type="number" value={newRewardCost} onChange={e => setNewRewardCost(Number(e.target.value))} className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-xs bg-white" />
+                        </div>
+                        <div>
+                          <label className="block text-[8px] font-bold text-slate-400 uppercase mb-1">Durată (min)</label>
+                          <input type="number" value={newRewardDuration} onChange={e => setNewRewardDuration(Number(e.target.value))} className="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-xs bg-white" />
+                        </div>
+                      </div>
+                      <button type="submit" className="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-black rounded-xl uppercase tracking-wider cursor-pointer transition shadow-sm">
+                        <Plus className="w-4 h-4 inline mr-1" /> Adaugă Recompensă
+                      </button>
+                    </form>
+                  </details>
+                </div>
+              )}
+            </div>
+          </div>
 
       {/* SECTIUNEA PLANIFICATOR DE SEARĂ: TIMP ECRAN SPRE ALOCARE */}
       <div className={`${dashboardStyles.card}`} id="parent-evening-planner">
@@ -1337,7 +1799,7 @@ export default function ParentDashboard({ state, onRefresh, onLock, theme, onCha
           Monitorizează progresul și eforturile depuse de Dominic și Sofia în vacanță. Graficul arată totalul punctelor acumulate în fiecare zi.
         </p>
 
-        <div className="h-[280px] w-full font-sans text-xs">
+        <div className="h-[280px] w-full min-h-[1px] font-sans text-xs">
           {state.pointsHistory && state.pointsHistory.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
